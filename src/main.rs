@@ -2,13 +2,18 @@ extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
+extern crate image;
 
+
+use std::path::Path;
 use piston::window::WindowSettings;
 use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL};
 use graphics::*;
+
+
 
 pub struct Grid {
     x_cells: u32,
@@ -70,11 +75,22 @@ impl Grid {
         let a_index = Grid::get_grid_index(ax,ay,self.x_cells);
         let b_index = Grid::get_grid_index(bx,by,self.x_cells);
 
-        let a_cell_content = self.cells.get(a_index as usize).unwrap().content;
-        let b_cell_content = self.cells.get(b_index as usize).unwrap().content;
+        let a_cell_content: &Option<opengl_graphics::Texture> = &self.cells
+                                 .get(a_index as usize)
+                                 .unwrap()
+                                 .content;
+        let b_cell_content: &Option<opengl_graphics::Texture> = &self.cells
+                                 .get(b_index as usize)
+                                 .unwrap()
+                                 .content;
 
-        self.cells.get_mut(b_index as usize).unwrap().content = a_cell_content;
-        self.cells.get_mut(a_index as usize).unwrap().content = b_cell_content;
+        //std::mem::swap(
+        //        &mut a_cell_content,
+        //        &mut b_cell_content
+        //    );
+
+        //self.cells.get_mut(b_index as usize).unwrap().content = a_cell_content;
+        //self.cells.get_mut(a_index as usize).unwrap().content = b_cell_content;
     }
     
 
@@ -102,21 +118,56 @@ impl Grid {
     }
 
 
-    pub fn new (x_cells: u32, y_cells: u32) -> Grid {
+    pub fn new (x_cells: u32, 
+                y_cells: u32, 
+                width: u32, 
+                height: u32, 
+                img_path: &str) -> Grid {
+        //prep the image
+        println!("Loading Image...");
+        let base_img = image::open(img_path).unwrap()
+            .resize(width,height,image::FilterType::Triangle);
+        println!("Image loaded...");
+        
+        
+        
         let mut cells: Vec<Cell> = Vec::new();
         for i in 0..x_cells*y_cells {
-            cells.push(Cell::new(0,0,None));
+            cells.push(Cell {
+                x_pos: 0,
+                y_pos: 0,
+                content: None
+            });
         }
 
         for x in 0..x_cells {
             for y in 0..y_cells {
-                let col = (x+y) as f32 /
-                          (x_cells + y_cells) as f32;
+                //let col = (x+y) as f32 /
+                //          (x_cells + y_cells) as f32;
+
+                let subimg = base_img.clone()
+                                     .crop(x*(width/x_cells),
+                                                y*(height/y_cells),
+                                                (width/x_cells),
+                                                (height/y_cells))
+                                      .to_rgba();
+
+                let image: opengl_graphics::Texture = 
+                        opengl_graphics::Texture::from_image(
+                            &subimg.clone(), 
+                            &opengl_graphics::TextureSettings::new()
+                        );
+                
+                //let image = opengl_graphics::Texture::from_path(
+                 //       &Path::new(img_path),
+                //        &opengl_graphics::TextureSettings::new()
+               //     ).unwrap();
+                    
                 let index = Grid::get_grid_index(x,y,x_cells);
                 let cell = cells.get_mut(index as usize).unwrap();
                 cell.x_pos = x;
                 cell.y_pos = y;
-                cell.content = Some(col);
+                cell.content = Some(image);
             }
         } 
 
@@ -140,10 +191,11 @@ impl Grid {
     }
 }
 
+
 pub struct Cell {
     x_pos: u32, 
     y_pos: u32,
-    content:Option<f32>
+    content:Option<opengl_graphics::Texture> //eventually this can hold a picture, or a pointer to a picture piece
 }
 
 
@@ -155,24 +207,37 @@ impl Cell {
                   x_cells: u32,
                   y_cells: u32,
                   args: &RenderArgs) {
-        let col: [f32; 4] = match self.content {
-            Some(val) => [val,val,val, 1.0],
-            None => [1.0,1.0,1.0,1.0]
-        };
-
         
         let width = args.width as f32 / x_cells as f32;
         let height = args.height as f32 / y_cells as f32;
         let x_offset = width * self.x_pos as f32;
         let y_offset = height * self.y_pos as f32;
-
-//        println!("x:{}, y:{}, col:{:?}", x_offset, y_offset, col);
-        
-        let square = rectangle::square(0.0,0.0,width as f64);
+ 
         let transform = t.trans(x_offset as f64,
                                 y_offset as f64);
 
-        rectangle(col, square, transform, gl);
+
+        match &self.content {
+            Some(val) => {
+                let img: &opengl_graphics::Texture = val;
+                let (scale_x, scale_y) = (
+                        width as f64 / img.get_width() as f64,
+                        height as f64 / img.get_height() as f64
+                    );
+                image(img, transform.scale(
+                            scale_x, 
+                            scale_y
+                        ), gl);
+            },
+            None => {
+                let square = rectangle::square(0.0,0.0,1.0);
+                let col:[f32; 4] = [1.0, 0.0, 0.0, 1.0];
+                rectangle(col, square, transform.scale(
+                            width as f64,
+                            height as f64
+                        ), gl);
+            }
+        }
     }
 
     pub fn update(&mut self) {
@@ -181,14 +246,6 @@ impl Cell {
 
     pub fn click(&mut self) {
         println!("Clicked Cell ({}, {})", self.x_pos, self.y_pos);
-    }
-
-    pub fn new(x: u32, y: u32, val: Option<f32>) -> Cell {
-        Cell {
-            x_pos: x,
-            y_pos: y,
-            content: val
-        }
     }
 }
 
@@ -227,10 +284,10 @@ impl App {
         self.grid.click(cell_x, cell_y);
     }
 
-    pub fn new(gl: GlGraphics) -> App {
+    pub fn new(width: u32, height: u32, gl: GlGraphics) -> App {
         App {
             gl: gl,
-            grid: Grid::new(5,5)
+            grid: Grid::new(5,5, width, height, "./res/sample.jpg")
         }
     }
 }
@@ -249,7 +306,9 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut app = App::new(GlGraphics::new(opengl));
+    let mut app = App::new(window_width,
+                           window_height,
+                           GlGraphics::new(opengl));
 
     let mut events = Events::new(EventSettings::new());
     
