@@ -3,7 +3,7 @@ extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate image;
-
+extern crate rand;
 
 use std::path::Path;
 use piston::window::WindowSettings;
@@ -47,7 +47,7 @@ impl Grid {
                         self.y_cells,
                         args,
                         texture
-                        );
+            );
         }
     }
 
@@ -86,7 +86,7 @@ impl Grid {
             .get(a_index as usize)
             .unwrap()
             .content;
-        
+
         let b_cell_content = self.cells
             .get(b_index as usize)
             .unwrap()
@@ -122,6 +122,68 @@ impl Grid {
 
     pub fn get_tile(&self, index: u32) -> &opengl_graphics::Texture {
         self.img_tiles.get(index as usize).unwrap()
+    }
+
+    pub fn random_step<R: rand::Rng>(&mut self, rng: &mut R) {
+        let mut possible_moves: Vec<(u32, u32)> = Vec::new();
+        //up, down, left, right
+
+        let (ex, ey) = (self.empty_x, self.empty_y);
+
+        //up
+        if ey > 0 {
+            let mv = (
+                ex,
+                ey - 1
+            );
+            possible_moves.push(mv);
+        }
+
+        //down
+        if ey < self.y_cells - 1 {
+            let mv = (
+                ex,
+                ey + 1
+            );
+            possible_moves.push(mv);
+        }
+
+        //left
+        if ex > 0 {
+            let mv = (
+                ex - 1,
+                ey
+            );
+            possible_moves.push(mv);
+        }
+
+        //right
+        if ex < self.x_cells - 1 {
+            let mv = (
+                ex + 1,
+                ey
+            );
+            possible_moves.push(mv);
+        }
+
+        let rand_move = rng.choose(&possible_moves);
+        println!("Moving:{:?}", &rand_move);
+
+        if let Some(mv) = rand_move {
+            self.swap_cells(*mv, (ex, ey));
+            let (mx, my) = *mv;
+            self.empty_x = mx;
+            self.empty_y = my;
+        }
+    }
+
+    pub fn randomize(&mut self, depth: u32) {
+        //cells, empty_x, empty_y
+        //swap_cells
+        let mut rng = rand::thread_rng();
+        for i in 0..depth {
+            self.random_step(&mut rng);
+        }
     }
 
     pub fn new (x_cells: u32, 
@@ -177,14 +239,17 @@ impl Grid {
             .unwrap()
             .content = None;
 
-        Grid {
+        let mut grid = Grid {
             x_cells: x_cells,
             y_cells: y_cells,
             empty_x: empty_x,
             empty_y: empty_y,
             img_tiles: img_tiles,
             cells: cells
-        }
+        };
+
+        grid.randomize(250);
+        grid
     }
 }
 
@@ -226,10 +291,17 @@ impl Cell {
                         scale_x, 
                         scale_y
                 ), gl);
+
+                let text = match &self.content {
+                    Some(ind) => format!("{}", ind),
+                    None => "Error".to_string()
+                };
+
+
             },
             None => {
                 let square = rectangle::square(0.0,0.0,1.0);
-                let col:[f32; 4] = [1.0, 0.0, 0.0, 1.0];
+                let col:[f32; 4] = [0.1, 0.1, 0.1, 1.0];
                 rectangle(col, square, transform.scale(
                         width as f64,
                         height as f64
