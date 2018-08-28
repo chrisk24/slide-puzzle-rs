@@ -45,19 +45,18 @@ impl Grid {
         }
     }
 
+
+    pub fn click(&mut self, x_cell: i32, y_cell: i32) {
+        println!("Clicked {},{}", x_cell, y_cell);
+    }
+
     pub fn new (x_cells: i32, y_cells: i32) -> Grid {
         let mut cells: Vec<Cell> = Vec::new();
         for x in 0..x_cells {
             for y in 0..y_cells {
                 let col = (x+y) as f32 /
                           (x_cells + y_cells) as f32;
-                cells.push(
-                        Cell::new(
-                            x,
-                            y,
-                            Some(col) 
-                            )
-                    );
+                cells.push(Cell::new(x,y,Some(col)));
             }
         }
         
@@ -144,6 +143,15 @@ impl App {
         self.grid.update();
     }
 
+
+    pub fn click(&mut self, raw_x: f32, raw_y: f32, w: u32, h: u32) {
+        let cell_width = w as f32 / self.grid.x_cells as f32;
+        let cell_height = h as f32 / self.grid.y_cells as f32;
+        let cell_x = (raw_x as f32 / cell_width) as i32;
+        let cell_y = (raw_y as f32 / cell_height) as i32;
+        self.grid.click(cell_x, cell_y);
+    }
+
     pub fn new(gl: GlGraphics) -> App {
         App {
             gl: gl,
@@ -155,10 +163,11 @@ impl App {
 fn main() {
 
     let opengl = OpenGL::V3_2;
+    let (mut window_width,mut window_height) = (400,400);
 
     let mut window: Window = WindowSettings::new(
         "Slide Puzzle",
-        [400,400]
+        [window_width,window_height]
     )
         .opengl(opengl)
         .exit_on_esc(true)
@@ -168,6 +177,9 @@ fn main() {
     let mut app = App::new(GlGraphics::new(opengl));
 
     let mut events = Events::new(EventSettings::new());
+    
+    let (mut mx,mut my) = (0.0,0.0);
+
     while let Some(e) = events.next(&mut window) {
         if let Some(r) = e.render_args() {
             app.render(&r);
@@ -175,6 +187,21 @@ fn main() {
 
         if let Some(u) = e.update_args() {
             app.update(&u);
+        }
+
+        e.mouse_cursor(|x,y| {
+            mx = x;
+            my = y;
+        });
+        e.resize(|w, h|{
+            window_width = w;
+            window_height = h;
+        });
+
+        if let Some(Button::Mouse(MouseButton::Left)) = e.press_args() {
+              println!("Clicked {},{}", mx, my);
+              app.click(mx as f32,my as f32,window_width, window_height);
+
         }
     }
 }
