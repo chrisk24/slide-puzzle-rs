@@ -5,7 +5,7 @@ extern crate opengl_graphics;
 
 mod app;
 mod grid;
-
+mod title_page;
 
 use piston::window::WindowSettings;
 use piston::event_loop::*;
@@ -14,7 +14,7 @@ use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL, GlyphCache};
 use app::App;
 use grid::Grid;
-
+use title_page::Title;
 
 fn main() {
 

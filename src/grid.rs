@@ -243,7 +243,7 @@ impl Grid {
         }
 
         let rand_move = rng.choose(&possible_moves);
-        println!("Moving:{:?}", &rand_move);
+        //println!("Moving:{:?}", &rand_move);
 
         if let Some(mv) = rand_move {
             self.swap_cells(*mv, (ex, ey));
@@ -258,10 +258,12 @@ impl Grid {
     pub fn randomize(&mut self, depth: u32) {
         //cells, empty_x, empty_y
         //swap_cells
+        println!("Randomizing...");
         let mut rng = rand::thread_rng();
         for i in 0..depth {
             self.random_step(&mut rng);
         }
+        println!("Randomized...");
     }
 
     pub fn new (x_cells: u32, 
@@ -272,10 +274,12 @@ impl Grid {
 
 
         //prep the image
+        println!("Loading Image....");
         let base_img = image::open(img_path).unwrap()
             .resize(width,height,image::FilterType::Triangle);
 
 
+        println!("Creating Tiles...");
         let mut img_tiles: Vec<opengl_graphics::Texture> = Vec::new();
         let mut cells: Vec<Cell> = Vec::new();
         for i in 0..x_cells*y_cells {
@@ -305,7 +309,7 @@ impl Grid {
 
             img_tiles.push(image);
         }
-
+        println!("Tiles Created...");
 
         let (empty_x, empty_y) = (x_cells - 1, y_cells - 1);
 
