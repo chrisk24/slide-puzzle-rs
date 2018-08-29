@@ -3,7 +3,8 @@ use opengl_graphics::{GlGraphics, GlyphCache};
 use graphics::*;
 use Grid;
 use Title;
-
+use TitleEvent;
+use GameEvent;
 
 pub enum State {
     Game(Grid),
@@ -52,17 +53,29 @@ impl App {
                 let cell_height = h as f32 / grid.y_cells as f32;
                 let cell_x = (raw_x as f32 / cell_width) as u32;
                 let cell_y = (raw_y as f32 / cell_height) as u32;
-                grid.click(cell_x, cell_y);
-                None
+                let event = grid.click(cell_x, cell_y);
+                match event {
+                    GameEvent::Completed => {
+                        println!("Congratz!");
+                        Some(State::Title(Title::new()))
+                    }
+                    GameEvent::NoEvent => {
+                        None
+                    }
+                }
             },
             State::Title(title) => {
-                Some(State::Game(
-                        Grid::new(title.grid_w,
-                                  title.grid_h,
-                                  w,
-                                  h,
-                                  &title.grid_img_path)
-                ))
+                let event = title.click(raw_x as u32, raw_y as u32, w, h);
+                match event {
+                    TitleEvent::PlayClick => Some(State::Game(
+                            Grid::new(title.grid_w,
+                                      title.grid_h,
+                                      w,
+                                      h,
+                                      &title.grid_img_path)
+                    )),
+                    TitleEvent::NoEvent => None
+                }
             }
         };
 

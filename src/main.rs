@@ -13,8 +13,8 @@ use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL, GlyphCache};
 use app::App;
-use grid::Grid;
-use title_page::Title;
+use grid::{Grid, GameEvent};
+use title_page::{Title, TitleEvent};
 
 fn main() {
 

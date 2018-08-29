@@ -8,6 +8,12 @@ use opengl_graphics::{GlGraphics, GlyphCache};
 use graphics::*;
 
 
+pub enum GameEvent {
+    Completed,
+    NoEvent
+}
+
+
 pub struct Cell {
     pub x_pos: u32, 
     pub y_pos: u32,
@@ -76,7 +82,10 @@ impl Cell {
     }
 
     pub fn update(&mut self) {
-
+    }
+    
+    pub fn correct_spot(&self, expect_content: Option<u32>) -> bool { 
+        self.content == expect_content
     }
 
     pub fn click(&mut self) {
@@ -169,7 +178,7 @@ impl Grid {
     }
 
 
-    pub fn click(&mut self, x_cell: u32, y_cell: u32) {
+    pub fn click(&mut self, x_cell: u32, y_cell: u32) -> GameEvent {
         let index = Grid::get_grid_index(x_cell,y_cell,self.x_cells);
         if let Some(cell) = self.cells.get_mut(index as usize) {
             cell.click();
@@ -189,7 +198,31 @@ impl Grid {
             self.empty_y = y_cell;
         }
 
+        if self.is_solved() {
+            return GameEvent::Completed;
+        }
 
+        GameEvent::NoEvent
+    }
+
+    pub fn is_solved(&self) -> bool {
+        for cell in &self.cells {
+            let (cx, cy) = (
+                    cell.x_pos,
+                    cell.y_pos
+                );
+            let expect = if cx == self.x_cells - 1 &&
+                            cy == self.y_cells - 1 {
+                            None
+                        } else {
+                            Some(Grid::get_grid_index(cx,cy,self.x_cells))
+                        };
+            if !cell.correct_spot(expect) {
+                return false;
+            }   
+        }
+
+        true
     }
 
     pub fn get_tile(&self, index: u32) -> &opengl_graphics::Texture {
