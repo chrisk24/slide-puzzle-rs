@@ -184,21 +184,23 @@ impl Grid {
             cell.click();
         }
 
-        let (empty_x, empty_y) = (self.empty_x, self.empty_y);
+        let (move_to_x, move_to_y) = (self.empty_x, self.empty_y);
 
         //real code
         if Grid::is_adjacent((x_cell, y_cell),
-        (empty_x, empty_y)) {
+        (move_to_x, move_to_y)) {
             println!("Clicked next to empty!");
 
             self.swap_cells((x_cell, y_cell),
-            (empty_x, empty_y));
+            (move_to_x, move_to_y));
 
             self.empty_x = x_cell;
             self.empty_y = y_cell;
         }
 
-        if self.is_solved() {
+        if self.empty_x == self.x_cells - 1 &&
+           self.empty_y == self.y_cells - 1 &&
+           self.is_solved() {
             return GameEvent::Completed;
         }
 
