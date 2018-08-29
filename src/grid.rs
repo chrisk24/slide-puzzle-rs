@@ -311,7 +311,7 @@ impl Grid {
         //prep the image
         println!("Loading Image....");
         let base_img = image::open(img_path).unwrap()
-            .resize(width,height,image::FilterType::Triangle);
+            .resize_exact(width,height,image::FilterType::Triangle);
 
 
         println!("Creating Tiles...");
