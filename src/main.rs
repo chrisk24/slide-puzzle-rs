@@ -10,7 +10,7 @@ use piston::window::WindowSettings;
 use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{GlGraphics, OpenGL};
+use opengl_graphics::{GlGraphics, OpenGL, GlyphCache};
 use graphics::*;
 
 
@@ -26,9 +26,10 @@ pub struct Grid {
 
 impl Grid {
     //functions for grid
-    pub fn render(&mut self, 
+    pub fn render(&self, 
                   gl: &mut GlGraphics, 
                   t: &math::Matrix2d,
+                  glyph: &mut GlyphCache,
                   args: &RenderArgs)  {
 
         const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
@@ -45,6 +46,7 @@ impl Grid {
                         t,
                         self.x_cells,
                         self.y_cells,
+                        glyph,
                         args,
                         texture
             );
@@ -64,9 +66,9 @@ impl Grid {
     }
 
 
-    fn is_adjacent(A: (u32, u32), B: (u32, u32)) -> bool {
-        let (ax, ay) = A;
-        let (bx, by) = B;
+    fn is_adjacent(a: (u32, u32), b: (u32, u32)) -> bool {
+        let (ax, ay) = a;
+        let (bx, by) = b;
 
         ((ax as i32 - bx as i32).abs() == 1 &&
          (ay == by)) ||
@@ -75,9 +77,9 @@ impl Grid {
     }
 
 
-    fn swap_cells(&mut self, A: (u32, u32), B: (u32, u32)) {
-        let (ax, ay) = A;
-        let (bx, by) = B;
+    fn swap_cells(&mut self, a: (u32, u32), b: (u32, u32)) {
+        let (ax, ay) = a;
+        let (bx, by) = b;
 
         let a_index = Grid::get_grid_index(ax,ay,self.x_cells);
         let b_index = Grid::get_grid_index(bx,by,self.x_cells);
@@ -124,6 +126,10 @@ impl Grid {
         self.img_tiles.get(index as usize).unwrap()
     }
 
+
+    //generate all neighbouring states, 
+    //and go to one of the neighbouring states
+    //at random
     pub fn random_step<R: rand::Rng>(&mut self, rng: &mut R) {
         let mut possible_moves: Vec<(u32, u32)> = Vec::new();
         //up, down, left, right
@@ -177,6 +183,8 @@ impl Grid {
         }
     }
 
+    //begin at end state, do a random graph transversal
+    //with the specified depth
     pub fn randomize(&mut self, depth: u32) {
         //cells, empty_x, empty_y
         //swap_cells
@@ -268,6 +276,7 @@ impl Cell {
                   t: &math::Matrix2d,
                   x_cells: u32,
                   y_cells: u32,
+                  glyph: &mut GlyphCache,
                   args: &RenderArgs,
                   texture: Option<&opengl_graphics::Texture>) {
 
@@ -292,12 +301,22 @@ impl Cell {
                         scale_y
                 ), gl);
 
-                let text = match &self.content {
-                    Some(ind) => format!("{}", ind),
+                let text_content = match &self.content {
+                    Some(ind) => format!("{}", ind+1),
                     None => "Error".to_string()
                 };
 
-
+                let text_color: [f32; 4] = [0.0,0.0,0.0,1.0];
+                
+                text::Text::new_color(text_color, 32).draw(&text_content,
+                                                           glyph,
+                                                           &DrawState::default(),
+                                                           transform.scale(
+                                                               0.5,0.5
+                                                               ).trans(
+                                                               5.0, 25.0
+                                                               ),
+                                                           gl).unwrap();
             },
             None => {
                 let square = rectangle::square(0.0,0.0,1.0);
@@ -319,41 +338,69 @@ impl Cell {
     }
 }
 
+#[derive(Clone)]
+pub enum Status {
+    Game,
+    Title
+}
+
 pub struct App {
     gl : GlGraphics,
-    grid: Grid
+    grid: Grid,
+    status: Status 
 }
 
 
 impl App {
 
-    pub fn render (&mut self, args: &RenderArgs) {
-
-        let grid: &mut Grid = &mut self.grid; 
-        self.gl.draw(args.viewport(), |c, gl|{
-            grid.render(gl, &c.transform, args);
-        });
-
+    pub fn render (&mut self, glyph: &mut GlyphCache, args: &RenderArgs) {
+        match self.status {
+            Status::Game => {
+                let grid: &Grid = &self.grid;
+                self.gl.draw(args.viewport(), |c, gl|{
+                    grid.render(gl, &c.transform, glyph, args);
+                });
+            },
+            Status::Title => {
+                self.gl.draw(args.viewport(), |c, gl|{
+                    clear([0.0,1.0,0.0,1.0], gl);
+                });
+            }
+        }
     }
 
     pub fn update(&mut self, args: &UpdateArgs) {
         //nothing yet
-        self.grid.update();
+        match self.status {
+            Status::Game => {self.grid.update();},
+            Status::Title => {
+            }
+        }
     }
 
 
     pub fn click(&mut self, raw_x: f32, raw_y: f32, w: u32, h: u32) {
-        let cell_width = w as f32 / self.grid.x_cells as f32;
-        let cell_height = h as f32 / self.grid.y_cells as f32;
-        let cell_x = (raw_x as f32 / cell_width) as u32;
-        let cell_y = (raw_y as f32 / cell_height) as u32;
-        self.grid.click(cell_x, cell_y);
+        let _status = self.status.clone();
+        match _status {
+            Status::Game => {
+
+                let cell_width = w as f32 / self.grid.x_cells as f32;
+                let cell_height = h as f32 / self.grid.y_cells as f32;
+                let cell_x = (raw_x as f32 / cell_width) as u32;
+                let cell_y = (raw_y as f32 / cell_height) as u32;
+                self.grid.click(cell_x, cell_y);
+            }
+            Status::Title => {
+                self.status = Status::Game;
+            }
+        }
     }
 
     pub fn new(width: u32, height: u32, gl: GlGraphics) -> App {
         App {
             gl: gl,
-            grid: Grid::new(5,5, width, height, "./res/sample.jpg")
+            status: Status::Title,
+            grid: Grid::new(3,3, width, height, "./res/sample.jpg")
         }
     }
 }
@@ -380,9 +427,13 @@ fn main() {
 
     let (mut mx,mut my) = (0.0,0.0);
 
+    let mut glyph = GlyphCache::new("res/FiraSans-Regular.ttf", (),
+                                opengl_graphics::TextureSettings::new())
+                            .unwrap();
+
     while let Some(e) = events.next(&mut window) {
         if let Some(r) = e.render_args() {
-            app.render(&r);
+            app.render(&mut glyph, &r);
         }
 
         if let Some(u) = e.update_args() {
