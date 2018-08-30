@@ -130,6 +130,7 @@ pub struct Title {
     pub grid_h: u32,
     pub grid_img_path: String,
     pub high_score: u32,
+    logo: opengl_graphics::Texture,
     play_btn: Button,
     file_choose_btn: Button,
     width_btn: Button,
@@ -165,25 +166,37 @@ impl Title {
         self.width_btn.render(gl,t,glyph,args);
         self.height_btn.render(gl,t,glyph,args);
 
+        let (screen_width, screen_height) = (args.height as f64,
+                                             args.width as f64);
+        
+        //render the logo
+        let logo_scale: f64 = 0.7;
+        let logo_width: f64 = 150.0;
+        image(&self.logo, t.trans((screen_width - logo_width * logo_scale)/2.0,
+                                  25.0)
+                            .scale(logo_scale,logo_scale), 
+              gl); 
+
+
         let text_content = &format!("Path:{}", &self.grid_img_path);
 
         Title::render_text(text_content,
                            glyph,
-                           t.trans(5.0, 25.0),
+                           t.trans(5.0, screen_height - 25.0),
                            24,
                            gl);
 
         let text_content = &format!("W:{}, H:{}", self.grid_w, self.grid_h);
         Title::render_text(text_content,
                            glyph,
-                           t.trans(5.0, 50.0),
+                           t.trans(5.0, screen_height - 50.0),
                            24,
                            gl);
 
         let text_content = &format!("High Score: {}", self.high_score);
         Title::render_text(text_content,
                            glyph,
-                           t.trans(5.0, 75.0),
+                           t.trans(5.0, screen_height - 75.0),
                            24,
                            gl);
     }
@@ -264,29 +277,33 @@ impl Title {
             grid_h: 5,
             grid_img_path: "./res/sample.jpg".to_string(),
             high_score: hs,
+            logo: opengl_graphics::Texture::from_path(
+                "./res/logo.png",
+                &opengl_graphics::TextureSettings::new()
+                ).unwrap(),
             play_btn: Button {
-                pos: ButtonPos::Centered(125),
+                pos: ButtonPos::Centered(145),
                 w: 140,
                 h: 40,
                 label: "Play Game!".to_string(),
                 state: ButtonState::Normal
             },
             file_choose_btn: Button {
-                pos: ButtonPos::Centered(175),
+                pos: ButtonPos::Centered(195),
                 w: 160,
                 h: 40,
                 label: "Choose Image".to_string(),
                 state: ButtonState::Normal
             },
             width_btn: Button {
-                pos: ButtonPos::CenteredOffset((-25, 225)),
+                pos: ButtonPos::CenteredOffset((-25, 245)),
                 w: 40,
                 h: 40,
                 label: "W".to_string(),
                 state: ButtonState::Normal
             },
             height_btn: Button {
-                pos: ButtonPos::CenteredOffset((25,225)),
+                pos: ButtonPos::CenteredOffset((25,245)),
                 w: 40,
                 h: 40,
                 label: "H".to_string(),
