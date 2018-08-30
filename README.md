@@ -1,13 +1,19 @@
-# slide-puzzle-rs
+slide-puzzle-rs
+=====
+
 A slide puzzle game written in Rust
 
 
-#Installing
+Installing
+====
+
 To install, all you need is to have rust installed.
 You may need to be on nightly, but it should work
 regardless.
 
-#Screen shots
+Screen shots
+=====
+
 
 Title Screen
 
