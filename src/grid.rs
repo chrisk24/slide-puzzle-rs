@@ -87,7 +87,7 @@ impl Cell {
     }
 
     pub fn click(&mut self) {
-        println!("Clicked Cell ({}, {})", self.x_pos, self.y_pos);
+        //println!("Clicked Cell ({}, {})", self.x_pos, self.y_pos);
     }
 }
 

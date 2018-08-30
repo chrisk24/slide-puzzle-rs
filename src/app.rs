@@ -13,7 +13,8 @@ pub enum State {
 
 pub struct App {
     gl : GlGraphics,
-    state: State 
+    state: State ,
+    high_score: u32
 }
 
 
@@ -59,7 +60,15 @@ impl App {
                 match event {
                     GameEvent::Completed => {
                         println!("Congratz! Moves:{}", &grid.move_counter);
-                        Some(State::Title(Title::new()))
+                        let new_high_score = if grid.move_counter < self.high_score || 
+                                                self.high_score == 0 {
+                            grid.move_counter
+                        } else {
+                            self.high_score
+                        };
+                        self.high_score = new_high_score;
+                        println!("New High Score: {}", &self.high_score);
+                        Some(State::Title(Title::new(new_high_score)))
                     }
                     GameEvent::NoEvent => {
                         None
@@ -95,7 +104,8 @@ impl App {
     pub fn new(width: u32, height: u32, gl: GlGraphics) -> App {
         App {
             gl: gl,
-            state: State::Title(Title::new())
+            state: State::Title(Title::new(0)),
+            high_score: 0
                 //grid: Grid::new(5,5, width, height, "./res/sample.jpg")
         }
     }

@@ -129,6 +129,7 @@ pub struct Title {
     pub grid_w: u32,
     pub grid_h: u32,
     pub grid_img_path: String,
+    pub high_score: u32,
     play_btn: Button,
     file_choose_btn: Button,
     width_btn: Button,
@@ -176,6 +177,13 @@ impl Title {
         Title::render_text(text_content,
                            glyph,
                            t.trans(5.0, 50.0),
+                           24,
+                           gl);
+
+        let text_content = &format!("High Score: {}", self.high_score);
+        Title::render_text(text_content,
+                           glyph,
+                           t.trans(5.0, 75.0),
                            24,
                            gl);
     }
@@ -250,36 +258,37 @@ impl Title {
        self.height_btn.mouse_move(raw_x, raw_y, w, h);
     }
 
-    pub fn new() -> Self {
+    pub fn new(hs : u32) -> Self {
         Title {
             grid_w: 5,
             grid_h: 5,
             grid_img_path: "./res/sample.jpg".to_string(),
+            high_score: hs,
             play_btn: Button {
-                pos: ButtonPos::Centered(75),
+                pos: ButtonPos::Centered(125),
                 w: 140,
                 h: 40,
                 label: "Play Game!".to_string(),
                 state: ButtonState::Normal
             },
             file_choose_btn: Button {
-                pos: ButtonPos::Centered(150),
+                pos: ButtonPos::Centered(175),
                 w: 160,
                 h: 40,
                 label: "Choose Image".to_string(),
                 state: ButtonState::Normal
             },
             width_btn: Button {
-                pos: ButtonPos::CenteredOffset((-33, 225)),
-                w: 50,
-                h: 50,
+                pos: ButtonPos::CenteredOffset((-25, 225)),
+                w: 40,
+                h: 40,
                 label: "W".to_string(),
                 state: ButtonState::Normal
             },
             height_btn: Button {
-                pos: ButtonPos::CenteredOffset((33,225)),
-                w: 50,
-                h: 50,
+                pos: ButtonPos::CenteredOffset((25,225)),
+                w: 40,
+                h: 40,
                 label: "H".to_string(),
                 state: ButtonState::Normal
             }
