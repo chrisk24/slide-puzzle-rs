@@ -49,11 +49,13 @@ impl App {
         //let _state = self.state.clone();
         let new_state = match &mut self.state {
             State::Game(grid) => {
+                //this should be moved to the grid file
                 let cell_width = w as f32 / grid.x_cells as f32;
                 let cell_height = h as f32 / grid.y_cells as f32;
                 let cell_x = (raw_x as f32 / cell_width) as u32;
                 let cell_y = (raw_y as f32 / cell_height) as u32;
                 let event = grid.click(cell_x, cell_y);
+                //let event = grid.click(raw_x, raw_y, w, h);
                 match event {
                     GameEvent::Completed => {
                         println!("Congratz! Moves:{}", &grid.move_counter);
@@ -84,10 +86,10 @@ impl App {
         }
 
     }
-    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32) {
+    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32, w: u32, h: u32) {
         match &mut self.state {
-            State::Game(grid) => {grid.mouse_move(raw_x, raw_y);},
-            State::Title(title) => {title.mouse_move(raw_x, raw_y);}
+            State::Game(grid) => {grid.mouse_move(raw_x, raw_y, w, h);},
+            State::Title(title) => {title.mouse_move(raw_x, raw_y, w, h);}
         }
     }
     pub fn new(width: u32, height: u32, gl: GlGraphics) -> App {

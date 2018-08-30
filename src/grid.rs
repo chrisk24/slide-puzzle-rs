@@ -60,12 +60,10 @@ impl Cell {
 
                 let text_color: [f32; 4] = [0.0,0.0,0.0,1.0];
 
-                text::Text::new_color(text_color, 32).draw(&text_content,
+                text::Text::new_color(text_color, 24).draw(&text_content,
                                                            glyph,
                                                            &DrawState::default(),
-                                                           transform.scale(
-                                                               0.5,0.5
-                                                           ).trans(
+                                                           transform.trans(
                                                                5.0, 25.0
                                                            ),
                                                            gl).unwrap();
@@ -211,7 +209,7 @@ impl Grid {
         GameEvent::NoEvent
     }
 
-    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32) {
+    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32, w: u32, h: u32) {
         
     }
 

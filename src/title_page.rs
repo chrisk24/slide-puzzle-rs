@@ -4,7 +4,15 @@ extern crate opengl_graphics;
 use piston::input::*;
 use opengl_graphics::{GlGraphics, GlyphCache};
 use graphics::*;
+use graphics::character::CharacterCache;
 use tinyfiledialogs;
+
+
+pub enum ButtonPos {
+    Fixed((u32, u32)), //fixed with xpos, ypos
+    Centered(u32), //centered with ypos
+    CenteredOffset((i32, u32)) //xoffset (can be negative), ypos
+}
 
 pub enum ButtonState {
     Normal,
@@ -12,8 +20,7 @@ pub enum ButtonState {
 }
 
 pub struct Button {
-    pub x: u32,
-    pub y: u32,
+    pub pos: ButtonPos,
     pub w: u32,
     pub h: u32,
     pub label: String,
@@ -21,6 +28,31 @@ pub struct Button {
 }
 
 impl Button {
+    fn get_left_x(&self, screen_width: u32) -> u32 {
+        let x = (screen_width as i32 - self.w as i32) / 2;
+        if x > 0 {
+            x as u32
+        } else {
+            0
+        }
+    }
+    
+    fn get_upper_left(&self, screen_width: u32) -> (u32, u32) {
+        match self.pos {
+            ButtonPos::Fixed((x,y)) => (x,y),
+            ButtonPos::Centered(y) => (self.get_left_x(screen_width), y),
+            ButtonPos::CenteredOffset((xoff, y)) => {
+                let xpos = self.get_left_x(screen_width) as i32 + xoff;
+                let xpos = if xpos > 0 {
+                                xpos as u32
+                            } else {
+                                0 
+                            };
+                (xpos, y)
+            }
+        }
+    }
+
     pub fn render(&self,
                   gl: &mut GlGraphics,
                   t: &math::Matrix2d,
@@ -34,28 +66,47 @@ impl Button {
     
         
         let rect = rectangle::square(0.0,0.0,1.0);
+
+        let screen_width = args.width as u32;
+
+        let (xpos, ypos) = self.get_upper_left(screen_width);
+        let base_pos_transform = t.trans(xpos as f64, ypos as f64);
+
+
         rectangle(color,
                   rect, 
-                  t.trans(self.x as f64, self.y as f64)
-                  .scale(self.w as f64, self.h as f64),
+                  base_pos_transform.scale(self.w as f64, 
+                                           self.h as f64),
                   gl);
 
-        text::Text::new_color([1.0,1.0,1.0,1.0], 32)
+        let font_size = 18;
+
+        let text_width = match glyph.width(font_size, &self.label) {
+            Ok(x) => x,
+            Err(e) => 0.0
+        };
+        //println!("{}", text_width);
+
+        text::Text::new_color([1.0,1.0,1.0,1.0], font_size)
             .draw(&self.label, glyph, &DrawState::default(),
-            t.trans(self.x as f64 + 5.0, self.y as f64 + 25.0)
-            .scale(0.7, 0.7), gl)
+            base_pos_transform.trans((self.w as f64 - text_width)/2.0, 
+                                     25.0), 
+            gl)
             .unwrap();
     }
 
-    pub fn in_bound(&self, x: u32, y: u32) -> bool {
-        (x >= self.x && 
-         x <= self.x+ self.w &&
-         y >= self.y &&
-         y <= self.y + self.h)
+    pub fn in_bound(&self, x: u32, y: u32, w: u32, h: u32) -> bool {
+
+        let (xbound, ybound) = self.get_upper_left(w);
+         
+        (x >= xbound && 
+         x <= xbound + self.w &&
+         y >= ybound &&
+         y <= ybound + self.h)
     }
 
-    pub fn mouse_move(&mut self, mx: u32, my: u32) {
-        self.state = if self.in_bound(mx,my){
+    pub fn mouse_move(&mut self, mx: u32, my: u32, w: u32, h: u32) {
+        self.state = if self.in_bound(mx,my, w, h){
                         ButtonState::Hover
                       }else {
                         ButtonState::Normal
@@ -89,8 +140,9 @@ impl Title {
     fn render_text(s: &str, 
                    glyph: &mut GlyphCache, 
                    t: math::Matrix2d,
+                   font_size: u32,
                    gl: &mut GlGraphics){
-        text::Text::new_color([0.0,0.0,0.0,1.0], 32)
+        text::Text::new_color([0.0,0.0,0.0,1.0], font_size)
             .draw(s,
                   glyph,
                   &DrawState::default(),
@@ -104,7 +156,7 @@ impl Title {
                   t: &math::Matrix2d,
                   glyph: &mut GlyphCache, 
                   args: &RenderArgs) {
-        let bg_col: [f32; 4] = [0.2,0.5,0.2,1.0];
+        let bg_col: [f32; 4] = [1.0,1.0,1.0,1.0];
         clear(bg_col, gl);
 
         self.play_btn.render(gl,t,glyph,args);
@@ -116,15 +168,15 @@ impl Title {
 
         Title::render_text(text_content,
                            glyph,
-                           t.trans(5.0, 25.0)
-                           .scale(0.7, 0.7),
+                           t.trans(5.0, 25.0),
+                           24,
                            gl);
 
         let text_content = &format!("W:{}, H:{}", self.grid_w, self.grid_h);
         Title::render_text(text_content,
                            glyph,
-                           t.trans(5.0, 50.0)
-                           .scale(0.7, 0.7),
+                           t.trans(5.0, 50.0),
+                           24,
                            gl);
     }
 
@@ -152,11 +204,11 @@ impl Title {
     }
 
     pub fn click(&mut self, raw_x: u32, raw_y: u32, w: u32, h: u32) -> TitleEvent {
-        if self.play_btn.in_bound(raw_x, raw_y) {
+        if self.play_btn.in_bound(raw_x, raw_y, w, h) {
             return TitleEvent::PlayClick;
         }
 
-        if self.file_choose_btn.in_bound(raw_x, raw_y) {
+        if self.file_choose_btn.in_bound(raw_x, raw_y, w, h) {
             let fl = Self::choose_file(Some("./res/sample.jpg".to_string()));
             println!("{:?}", fl);
             if let Some(pth) = fl {
@@ -164,7 +216,7 @@ impl Title {
             }
         }
 
-        if self.width_btn.in_bound(raw_x, raw_y) {
+        if self.width_btn.in_bound(raw_x, raw_y, w, h) {
             let new_width = Self::input_dialog("Enter Width", Some("5".to_string()));
             println!("{:?}", new_width);
             if let Some(mut new_width) = new_width {
@@ -176,7 +228,7 @@ impl Title {
             }
         }
 
-        if self.height_btn.in_bound(raw_x, raw_y) {
+        if self.height_btn.in_bound(raw_x, raw_y, w, h) {
             let new_height = Self::input_dialog("Enter Height", Some("5".to_string()));
             println!("{:?}", new_height);
             if let Some(mut new_height) = new_height {
@@ -191,11 +243,11 @@ impl Title {
         TitleEvent::NoEvent
     }
 
-    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32) {
-       self.play_btn.mouse_move(raw_x, raw_y);
-       self.file_choose_btn.mouse_move(raw_x, raw_y);
-       self.width_btn.mouse_move(raw_x, raw_y);
-       self.height_btn.mouse_move(raw_x, raw_y);
+    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32, w: u32, h: u32) {
+       self.play_btn.mouse_move(raw_x, raw_y, w, h);
+       self.file_choose_btn.mouse_move(raw_x, raw_y, w, h);
+       self.width_btn.mouse_move(raw_x, raw_y, w, h);
+       self.height_btn.mouse_move(raw_x, raw_y, w, h);
     }
 
     pub fn new() -> Self {
@@ -204,32 +256,28 @@ impl Title {
             grid_h: 5,
             grid_img_path: "./res/sample.jpg".to_string(),
             play_btn: Button {
-                x: 5,
-                y: 75,
+                pos: ButtonPos::Centered(75),
                 w: 140,
                 h: 40,
                 label: "Play Game!".to_string(),
                 state: ButtonState::Normal
             },
             file_choose_btn: Button {
-                x: 5,
-                y: 150,
-                w: 140,
+                pos: ButtonPos::Centered(150),
+                w: 160,
                 h: 40,
-                label: "choose img".to_string(),
+                label: "Choose Image".to_string(),
                 state: ButtonState::Normal
             },
             width_btn: Button {
-                x: 5,
-                y: 225,
+                pos: ButtonPos::CenteredOffset((-33, 225)),
                 w: 50,
                 h: 50,
                 label: "W".to_string(),
                 state: ButtonState::Normal
             },
             height_btn: Button {
-                x: 75,
-                y: 225,
+                pos: ButtonPos::CenteredOffset((33,225)),
                 w: 50,
                 h: 50,
                 label: "H".to_string(),
