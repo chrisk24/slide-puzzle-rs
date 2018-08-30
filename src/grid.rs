@@ -365,7 +365,7 @@ impl Grid {
             cells: cells
         };
 
-        grid.randomize(250);
+        grid.randomize(x_cells * y_cells * 10);
         grid
     }
 }
