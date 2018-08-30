@@ -100,7 +100,8 @@ pub struct Grid {
     empty_x: u32,
     empty_y: u32,
     img_tiles: Vec<opengl_graphics::Texture>,
-    cells: Vec<Cell>
+    cells: Vec<Cell>,
+    pub move_counter: u32
 }
 
 impl Grid {
@@ -130,6 +131,7 @@ impl Grid {
                         texture
             );
         }
+
     }
 
     pub fn update(&mut self) {
@@ -196,6 +198,8 @@ impl Grid {
 
             self.empty_x = x_cell;
             self.empty_y = y_cell;
+
+            self.move_counter += 1;
         }
 
         if self.empty_x == self.x_cells - 1 &&
@@ -205,6 +209,10 @@ impl Grid {
         }
 
         GameEvent::NoEvent
+    }
+
+    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32) {
+        
     }
 
     pub fn is_solved(&self) -> bool {
@@ -362,7 +370,8 @@ impl Grid {
             empty_x: empty_x,
             empty_y: empty_y,
             img_tiles: img_tiles,
-            cells: cells
+            cells: cells,
+            move_counter: 0
         };
 
         grid.randomize(x_cells * y_cells * 10);

@@ -55,7 +55,9 @@ fn main() {
         e.mouse_cursor(|x,y| {
             mx = x;
             my = y;
+            app.mouse_move(mx as u32, my as u32);
         });
+
         e.resize(|w, h|{
             window_width = w;
             window_height = h;

@@ -6,12 +6,18 @@ use opengl_graphics::{GlGraphics, GlyphCache};
 use graphics::*;
 use tinyfiledialogs;
 
+pub enum ButtonState {
+    Normal,
+    Hover
+}
+
 pub struct Button {
     pub x: u32,
     pub y: u32,
     pub w: u32,
     pub h: u32,
-    pub label: String
+    pub label: String,
+    pub state: ButtonState,
 }
 
 impl Button {
@@ -21,8 +27,14 @@ impl Button {
                   glyph: &mut GlyphCache,
                   args: &RenderArgs
     ) {
+        let color = match &self.state {
+            ButtonState::Normal => [0.2,0.2,0.2,1.0],
+            ButtonState::Hover => [0.4,0.4,0.4,1.0]
+        };
+    
+        
         let rect = rectangle::square(0.0,0.0,1.0);
-        rectangle([0.2,0.2,0.2,0.8],
+        rectangle(color,
                   rect, 
                   t.trans(self.x as f64, self.y as f64)
                   .scale(self.w as f64, self.h as f64),
@@ -40,6 +52,18 @@ impl Button {
          x <= self.x+ self.w &&
          y >= self.y &&
          y <= self.y + self.h)
+    }
+
+    pub fn mouse_move(&mut self, mx: u32, my: u32) {
+        self.state = if self.in_bound(mx,my){
+                        ButtonState::Hover
+                      }else {
+                        ButtonState::Normal
+                      };
+        /*match &self.state {
+            ButtonState::Hover => {println!("Hovered {}", &self.label);},
+            ButtonState::Normal => {}
+        }*/
     }
 }
 
@@ -80,7 +104,7 @@ impl Title {
                   t: &math::Matrix2d,
                   glyph: &mut GlyphCache, 
                   args: &RenderArgs) {
-        let bg_col: [f32; 4] = [0.2,0.5,0.5,1.0];
+        let bg_col: [f32; 4] = [0.2,0.5,0.2,1.0];
         clear(bg_col, gl);
 
         self.play_btn.render(gl,t,glyph,args);
@@ -167,6 +191,13 @@ impl Title {
         TitleEvent::NoEvent
     }
 
+    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32) {
+       self.play_btn.mouse_move(raw_x, raw_y);
+       self.file_choose_btn.mouse_move(raw_x, raw_y);
+       self.width_btn.mouse_move(raw_x, raw_y);
+       self.height_btn.mouse_move(raw_x, raw_y);
+    }
+
     pub fn new() -> Self {
         Title {
             grid_w: 5,
@@ -177,28 +208,32 @@ impl Title {
                 y: 75,
                 w: 140,
                 h: 40,
-                label: "Play Game!".to_string()
+                label: "Play Game!".to_string(),
+                state: ButtonState::Normal
             },
             file_choose_btn: Button {
                 x: 5,
                 y: 150,
                 w: 140,
                 h: 40,
-                label: "choose img".to_string()
+                label: "choose img".to_string(),
+                state: ButtonState::Normal
             },
             width_btn: Button {
                 x: 5,
                 y: 225,
                 w: 50,
                 h: 50,
-                label: "W".to_string()
+                label: "W".to_string(),
+                state: ButtonState::Normal
             },
             height_btn: Button {
                 x: 75,
                 y: 225,
                 w: 50,
                 h: 50,
-                label: "H".to_string()
+                label: "H".to_string(),
+                state: ButtonState::Normal
             }
         }
     }

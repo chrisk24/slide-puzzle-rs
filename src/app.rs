@@ -56,7 +56,7 @@ impl App {
                 let event = grid.click(cell_x, cell_y);
                 match event {
                     GameEvent::Completed => {
-                        println!("Congratz!");
+                        println!("Congratz! Moves:{}", &grid.move_counter);
                         Some(State::Title(Title::new()))
                     }
                     GameEvent::NoEvent => {
@@ -84,7 +84,12 @@ impl App {
         }
 
     }
-
+    pub fn mouse_move(&mut self, raw_x: u32, raw_y: u32) {
+        match &mut self.state {
+            State::Game(grid) => {grid.mouse_move(raw_x, raw_y);},
+            State::Title(title) => {title.mouse_move(raw_x, raw_y);}
+        }
+    }
     pub fn new(width: u32, height: u32, gl: GlGraphics) -> App {
         App {
             gl: gl,
