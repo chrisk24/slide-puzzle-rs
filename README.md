@@ -10,8 +10,10 @@ regardless.
 #Screen shots
 
 Title Screen
-![Title Screen Image](https://i.imgur.com/5bnkTyP.png)
+
+<img src="https://i.imgur.com/5bnkTyP.png" width="200px" height="200px">
 
 
 Game Screen
-![Game Screen Image](https://i.imgur.com/UMUVAhW.png)
+
+<img src="https://i.imgur.com/UMUVAhW.png" width="200px" height="200px">
