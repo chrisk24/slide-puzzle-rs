@@ -166,8 +166,8 @@ impl Title {
         self.width_btn.render(gl,t,glyph,args);
         self.height_btn.render(gl,t,glyph,args);
 
-        let (screen_width, screen_height) = (args.height as f64,
-                                             args.width as f64);
+        let (screen_width, screen_height) = (args.width as f64,
+                                             args.height as f64);
         
         //render the logo
         let logo_scale: f64 = 0.7;
