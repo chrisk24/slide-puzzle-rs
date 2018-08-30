@@ -55,7 +55,9 @@ pub struct Title {
     pub grid_h: u32,
     pub grid_img_path: String,
     play_btn: Button,
-    file_choose_btn: Button
+    file_choose_btn: Button,
+    width_btn: Button,
+    height_btn: Button
 }
 
 impl Title {
@@ -83,7 +85,8 @@ impl Title {
 
         self.play_btn.render(gl,t,glyph,args);
         self.file_choose_btn.render(gl, t, glyph, args);
-
+        self.width_btn.render(gl,t,glyph,args);
+        self.height_btn.render(gl,t,glyph,args);
 
         let text_content = &format!("Path:{}", &self.grid_img_path);
 
@@ -111,6 +114,15 @@ impl Title {
         fl
     }
 
+    pub fn input_dialog(msg: &str, default: Option<String>) -> Option<String> {
+        let def = match default {
+            Some(x) => x,
+            None => "".to_string()
+        };
+        let result = tinyfiledialogs::input_box("Input", msg, &def);
+        result
+    }
+
     pub fn update(&mut self) {
 
     }
@@ -125,6 +137,30 @@ impl Title {
             println!("{:?}", fl);
             if let Some(pth) = fl {
                 self.grid_img_path = pth;
+            }
+        }
+
+        if self.width_btn.in_bound(raw_x, raw_y) {
+            let new_width = Self::input_dialog("Enter Width", Some("5".to_string()));
+            println!("{:?}", new_width);
+            if let Some(mut new_width) = new_width {
+                new_width.retain(|c| c.is_numeric());
+                match new_width.parse::<u32>() {
+                    Ok(w) => {self.grid_w = w;},
+                    Err(e) => {println!("{:?}", e);}
+                }
+            }
+        }
+
+        if self.height_btn.in_bound(raw_x, raw_y) {
+            let new_height = Self::input_dialog("Enter Height", Some("5".to_string()));
+            println!("{:?}", new_height);
+            if let Some(mut new_height) = new_height {
+                new_height.retain(|c| c.is_numeric());
+                match new_height.parse::<u32>() {
+                    Ok(h) => {self.grid_h = h;},
+                    Err(e) => {println!("{:?}", e);}
+                }
             }
         }
 
@@ -149,6 +185,20 @@ impl Title {
                 w: 140,
                 h: 40,
                 label: "choose img".to_string()
+            },
+            width_btn: Button {
+                x: 5,
+                y: 225,
+                w: 50,
+                h: 50,
+                label: "W".to_string()
+            },
+            height_btn: Button {
+                x: 75,
+                y: 225,
+                w: 50,
+                h: 50,
+                label: "H".to_string()
             }
         }
     }
